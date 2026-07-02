@@ -11,13 +11,11 @@ add_library(cortex_native SHARED
 
 target_link_libraries(cortex_native
     llama
-    common
     log
     android
 )
 
 target_include_directories(cortex_native PRIVATE
     ${LLAMA_DIR}/include
-    ${LLAMA_DIR}/common
     ${LLAMA_DIR}/ggml/include
 )
