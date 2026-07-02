@@ -72,25 +72,37 @@ class MainActivity : AppCompatActivity() {
                 val modelPath = "/storage/emulated/0/Download/qwen2.5-0.5b-instruct-q4_k_m.gguf"
                 val file = File(modelPath)
 
-                runOnUiThread { modelText.text = "جاري تحميل الموديل..." }
+                runOnUiThread { modelText.text = "1️⃣ جاري التحقق من الملف..." }
 
                 if (!file.exists()) {
                     runOnUiThread { modelText.text = "❌ الموديل مو موجود بالمسار المتوقع" }
                     return@Thread
                 }
 
+                runOnUiThread { modelText.text = "2️⃣ جاري تحميل الموديل بالذاكرة (قد يأخذ دقيقة)..." }
+
+                val startLoad = System.currentTimeMillis()
                 val loaded = LlamaBridge.loadModel(modelPath)
+                val loadTime = (System.currentTimeMillis() - startLoad) / 1000
+
+                if (!loaded) {
+                    runOnUiThread { modelText.text = "❌ فشل تحميل الموديل بعد ${loadTime}ث" }
+                    return@Thread
+                }
+
+                runOnUiThread { modelText.text = "3️⃣ الموديل تحمّل بنجاح (${loadTime}ث). جاري التوليد..." }
+
+                val startGen = System.currentTimeMillis()
+                val output = LlamaBridge.generate("hi")
+                val genTime = (System.currentTimeMillis() - startGen) / 1000
 
                 runOnUiThread {
-                    if (loaded) {
-                        val output = LlamaBridge.generate("test")
-                        modelText.text = "✅ الموديل تحمّل بنجاح\n$output"
-                    } else {
-                        modelText.text = "❌ فشل تحميل الموديل"
-                    }
+                    modelText.text = "✅ تم كل شي\nتحميل: ${loadTime}ث | توليد: ${genTime}ث\n\nالنتيجة: $output"
                 }
             } catch (e: Exception) {
                 runOnUiThread { modelText.text = "خطأ بالموديل: ${e.message}" }
+            } catch (e: Error) {
+                runOnUiThread { modelText.text = "خطأ خطير (native): ${e.message}" }
             }
         }.start()
     }
