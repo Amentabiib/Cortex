@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <string>
+#include <vector>
 #include <android/log.h>
 #include "llama.h"
 
@@ -8,6 +9,7 @@
 
 static llama_model* g_model = nullptr;
 static llama_context* g_ctx = nullptr;
+static const llama_vocab* g_vocab = nullptr;
 
 extern "C"
 JNIEXPORT jboolean JNICALL
@@ -24,8 +26,11 @@ Java_com_warden_cortex_LlamaBridge_loadModel(JNIEnv *env, jobject, jstring model
         return JNI_FALSE;
     }
 
+    g_vocab = llama_model_get_vocab(g_model);
+
     llama_context_params ctx_params = llama_context_default_params();
     ctx_params.n_ctx = 2048;
+    ctx_params.n_batch = 512;
     g_ctx = llama_new_context_with_model(g_model, ctx_params);
 
     if (g_ctx == nullptr) {
@@ -44,9 +49,51 @@ Java_com_warden_cortex_LlamaBridge_generate(JNIEnv *env, jobject, jstring prompt
         return env->NewStringUTF("Error: model not loaded");
     }
 
-    const char *promptStr = env->GetStringUTFChars(prompt, nullptr);
-    std::string result = "Model loaded. Generation logic pending.";
-    env->ReleaseStringUTFChars(prompt, promptStr);
+    const char *promptChars = env->GetStringUTFChars(prompt, nullptr);
+    std::string promptStr(promptChars);
+    env->ReleaseStringUTFChars(prompt, promptChars);
+
+    const int n_prompt_max = 512;
+    std::vector<llama_token> tokens(n_prompt_max);
+    int n_tokens = llama_tokenize(g_vocab, promptStr.c_str(), (int32_t)promptStr.length(),
+                                   tokens.data(), n_prompt_max, true, true);
+    if (n_tokens < 0) {
+        return env->NewStringUTF("Error: tokenize failed");
+    }
+    tokens.resize(n_tokens);
+
+    llama_batch batch = llama_batch_get_one(tokens.data(), n_tokens);
+    if (llama_decode(g_ctx, batch) != 0) {
+        return env->NewStringUTF("Error: decode failed");
+    }
+
+    llama_sampler_chain_params sparams = llama_sampler_chain_default_params();
+    llama_sampler* sampler = llama_sampler_chain_init(sparams);
+    llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
+
+    std::string result;
+    const int max_new_tokens = 128;
+
+    for (int i = 0; i < max_new_tokens; i++) {
+        llama_token new_token = llama_sampler_sample(sampler, g_ctx, -1);
+
+        if (llama_vocab_is_eog(g_vocab, new_token)) {
+            break;
+        }
+
+        char buf[256];
+        int len = llama_token_to_piece(g_vocab, new_token, buf, sizeof(buf), 0, true);
+        if (len > 0) {
+            result.append(buf, len);
+        }
+
+        llama_batch next_batch = llama_batch_get_one(&new_token, 1);
+        if (llama_decode(g_ctx, next_batch) != 0) {
+            break;
+        }
+    }
+
+    llama_sampler_free(sampler);
 
     return env->NewStringUTF(result.c_str());
 }
