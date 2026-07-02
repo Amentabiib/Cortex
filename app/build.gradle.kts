@@ -20,7 +20,8 @@ android {
 
         externalNativeBuild {
             cmake {
-                cppFlags += ""
+                arguments += listOf("-DCMAKE_BUILD_TYPE=Release")
+                cppFlags += listOf("-O3")
             }
         }
     }
