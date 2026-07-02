@@ -52,12 +52,17 @@ Java_com_warden_cortex_LlamaBridge_generate(JNIEnv *env, jobject, jstring prompt
     }
 
     const char *promptChars = env->GetStringUTFChars(prompt, nullptr);
-    std::string promptStr(promptChars);
+    std::string userPrompt(promptChars);
     env->ReleaseStringUTFChars(prompt, promptChars);
 
-    const int n_prompt_max = 256;
+    std::string formattedPrompt =
+        "<|im_start|>system\nYou are Cortex, a helpful Android system assistant.<|im_end|>\n"
+        "<|im_start|>user\n" + userPrompt + "<|im_end|>\n"
+        "<|im_start|>assistant\n";
+
+    const int n_prompt_max = 400;
     std::vector<llama_token> tokens(n_prompt_max);
-    int n_tokens = llama_tokenize(g_vocab, promptStr.c_str(), (int32_t)promptStr.length(),
+    int n_tokens = llama_tokenize(g_vocab, formattedPrompt.c_str(), (int32_t)formattedPrompt.length(),
                                    tokens.data(), n_prompt_max, true, true);
     if (n_tokens < 0) {
         return env->NewStringUTF("Error: tokenize failed");
@@ -74,7 +79,7 @@ Java_com_warden_cortex_LlamaBridge_generate(JNIEnv *env, jobject, jstring prompt
     llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
 
     std::string result;
-    const int max_new_tokens = 64;
+    const int max_new_tokens = 100;
 
     for (int i = 0; i < max_new_tokens; i++) {
         llama_token new_token = llama_sampler_sample(sampler, g_ctx, -1);
