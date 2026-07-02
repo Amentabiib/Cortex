@@ -42,18 +42,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun runTestCommand() {
-        try {
-            val process = Shizuku.newProcess(
-                arrayOf("sh", "-c", "dumpsys battery | grep level"),
-                null, null
+    private fun runShizukuCommand(command: String): String {
+        return try {
+            val method = Shizuku::class.java.getDeclaredMethod(
+                "newProcess",
+                Array<String>::class.java,
+                Array<String>::class.java,
+                String::class.java
             )
+            method.isAccessible = true
+            val process = method.invoke(
+                null,
+                arrayOf("sh", "-c", command),
+                null,
+                null
+            ) as Process
+
             val reader = BufferedReader(InputStreamReader(process.inputStream))
             val output = reader.readText()
             process.waitFor()
-            resultText.text = "نتيجة الأمر:\n$output"
+            output
         } catch (e: Exception) {
-            resultText.text = "فشل تنفيذ الأمر: ${e.message}"
+            "فشل: ${e.message}"
         }
+    }
+
+    private fun runTestCommand() {
+        val output = runShizukuCommand("dumpsys battery | grep level")
+        resultText.text = "نتيجة الأمر:\n$output"
     }
 }
