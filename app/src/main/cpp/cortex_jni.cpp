@@ -29,8 +29,10 @@ Java_com_warden_cortex_LlamaBridge_loadModel(JNIEnv *env, jobject, jstring model
     g_vocab = llama_model_get_vocab(g_model);
 
     llama_context_params ctx_params = llama_context_default_params();
-    ctx_params.n_ctx = 2048;
-    ctx_params.n_batch = 512;
+    ctx_params.n_ctx = 512;
+    ctx_params.n_batch = 256;
+    ctx_params.n_threads = 4;
+    ctx_params.n_threads_batch = 4;
     g_ctx = llama_new_context_with_model(g_model, ctx_params);
 
     if (g_ctx == nullptr) {
@@ -53,7 +55,7 @@ Java_com_warden_cortex_LlamaBridge_generate(JNIEnv *env, jobject, jstring prompt
     std::string promptStr(promptChars);
     env->ReleaseStringUTFChars(prompt, promptChars);
 
-    const int n_prompt_max = 512;
+    const int n_prompt_max = 256;
     std::vector<llama_token> tokens(n_prompt_max);
     int n_tokens = llama_tokenize(g_vocab, promptStr.c_str(), (int32_t)promptStr.length(),
                                    tokens.data(), n_prompt_max, true, true);
@@ -72,7 +74,7 @@ Java_com_warden_cortex_LlamaBridge_generate(JNIEnv *env, jobject, jstring prompt
     llama_sampler_chain_add(sampler, llama_sampler_init_greedy());
 
     std::string result;
-    const int max_new_tokens = 128;
+    const int max_new_tokens = 64;
 
     for (int i = 0; i < max_new_tokens; i++) {
         llama_token new_token = llama_sampler_sample(sampler, g_ctx, -1);
