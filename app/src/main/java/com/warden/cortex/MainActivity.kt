@@ -246,7 +246,7 @@ class MainActivity : AppCompatActivity() {
     private fun exportLog() {
         try {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val logFile = File(getExternalFilesDir(null), "cortex_log_$timestamp.txt")
+            val logFile = File(File("/storage/emulated/0/Download"), "cortex_log_$timestamp.txt")
             val writer = FileWriter(logFile)
             writer.write(logEntries.joinToString("\n"))
             writer.close()
