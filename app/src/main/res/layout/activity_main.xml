@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -21,7 +25,22 @@
         android:paddingTop="8dp" />
 
     <TextView
-        android:id="@+id/resultText"
+        android:id="@+id/modelText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="14sp"
+        android:paddingTop="8dp" />
+
+    <Button
+        android:id="@+id/askButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="اسأل الذكاء الاصطناعي" />
+
+    <TextView
+        android:id="@+id/decisionText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text=""
@@ -29,7 +48,7 @@
         android:paddingTop="16dp" />
 
     <TextView
-        android:id="@+id/modelText"
+        android:id="@+id/resultText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text=""
@@ -37,3 +56,4 @@
         android:paddingTop="16dp" />
 
 </LinearLayout>
+</ScrollView>
